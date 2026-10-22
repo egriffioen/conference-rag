@@ -619,6 +619,8 @@ function groupByTalk(sentences) {
                 talk_id: sent.talk_id,
                 title: sent.title,
                 speaker: sent.speaker,
+                year: sent.year,
+                season: sent.season,
                 url: sent.url,
                 sentences: [],
                 totalSimilarity: 0
@@ -635,6 +637,8 @@ function groupByTalk(sentences) {
             talk_id: talk.talk_id,
             title: talk.title,
             speaker: talk.speaker,
+            year: talk.year,
+            season: talk.season,
             url: talk.url,
             text: talk.sentences.join(' '),
             // TODO: Is average similarity the right metric? Alternatives worth researching:

@@ -107,8 +107,10 @@ ON page_views FOR SELECT
 TO anon, authenticated
 USING (true);
 
--- Create function for similarity search
-CREATE OR REPLACE FUNCTION match_sentences(
+-- Create function for similarity search.
+-- DROP first: CREATE OR REPLACE can't change the columns a function returns.
+DROP FUNCTION IF EXISTS match_sentences(vector, int);
+CREATE FUNCTION match_sentences(
   query_embedding vector(1536),
   match_count int DEFAULT 20
 )
@@ -117,6 +119,9 @@ RETURNS TABLE (
   talk_id uuid,
   title text,
   speaker text,
+  year integer,
+  season text,
+  url text,
   text text,
   similarity float
 )
@@ -127,6 +132,9 @@ AS $$
     sentence_embeddings.talk_id,
     sentence_embeddings.title,
     sentence_embeddings.speaker,
+    sentence_embeddings.year,
+    sentence_embeddings.season,
+    sentence_embeddings.url,
     sentence_embeddings.text,
     1 - (sentence_embeddings.embedding <=> query_embedding) as similarity
   FROM sentence_embeddings

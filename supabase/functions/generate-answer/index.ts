@@ -16,10 +16,19 @@ const MAX_TALK_CHARS = 30000;
 
 const SYSTEM_PROMPT = `Use these talks, and only the talks provided, to answer the question. No outside sources or internal knowledge is allowed.
 When you answer, cite the talk title and the speaker within the answer. Never hallucinate or just make up an answer.
-If the talks don't answer the question, or are not relevant enough, just say so.`;
+If the talks don't answer the question, or are not relevant enough, just say so.
+Each talk is labeled with the conference it was given at. Only state when something was said if the label shows it,
+and if the question names a different date than the talk's label, point out the difference instead of using the question's date.`;
 
 // The shape of one talk as app.js sends it (it also sends extra fields we ignore).
-type Talk = { title: string; speaker: string; text: string };
+// year and season are optional: without them the label just has no date.
+type Talk = { title: string; speaker: string; text: string; year?: unknown; season?: unknown };
+
+// "October 2024", or "" if the talk didn't come with a usable date.
+function talkDate(talk: Talk): string {
+  if (typeof talk.year !== "number" || typeof talk.season !== "string") return "";
+  return `${talk.season} ${talk.year}`;
+}
 
 Deno.serve(async (req) => {
   // 1. CORS preflight.
@@ -77,7 +86,11 @@ Deno.serve(async (req) => {
   // 4. Build the user message: every talk, clearly labeled so the model can
   //    cite it, then the question.
   const context = talks
-    .map((talk, i) => `[Talk ${i + 1}] "${talk.title}" by ${talk.speaker}\n${talk.text}`)
+    .map((talk, i) => {
+      const date = talkDate(talk);
+      const header = `[Talk ${i + 1}] "${talk.title}" by ${talk.speaker}${date ? ` (${date} general conference)` : ""}`;
+      return `${header}\n${talk.text}`;
+    })
     .join("\n\n");
 
   const userMessage = `Conference talks:\n\n${context}\n\nQuestion: ${question}`;

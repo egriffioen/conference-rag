@@ -78,11 +78,13 @@ const semanticInput = document.getElementById('semantic-input');
 const semanticBtn = document.getElementById('semantic-btn');
 const semanticResults = document.getElementById('semantic-results');
 const semanticStatus = document.getElementById('semantic-status');
+const semanticHyde = document.getElementById('semantic-hyde');
 
 const ragInput = document.getElementById('rag-input');
 const ragBtn = document.getElementById('rag-btn');
 const ragResults = document.getElementById('rag-results');
 const ragStatus = document.getElementById('rag-status');
+const ragHyde = document.getElementById('rag-hyde');
 
 // ============================================
 // SETUP BANNER DETECTION
@@ -479,8 +481,8 @@ async function semanticSearch() {
     clearResults('semantic');
 
     try {
-        // Step 1: Get embedding
-        const embedding = await getEmbedding(query);
+        // Step 1: Get embedding (of the query, or of a HyDE passage)
+        const { embedding, hypothetical } = await getEmbedding(query, semanticHyde?.checked);
 
         // Step 2: Search for similar sentences
         const results = await searchSentences(embedding);
@@ -491,7 +493,7 @@ async function semanticSearch() {
         }
 
         // Step 3: Display results with similarity badges
-        let html = '';
+        let html = hydePassageCard(hypothetical);
         for (const result of results) {
             const sim = result.similarity;
             const badge = similarityBadge(sim);
@@ -527,8 +529,8 @@ async function askQuestion() {
     clearResults('rag');
 
     try {
-        // Step 1: Get embedding
-        const embedding = await getEmbedding(question);
+        // Step 1: Get embedding (of the question, or of a HyDE passage)
+        const { embedding, hypothetical } = await getEmbedding(question, ragHyde?.checked);
 
         // Step 2: Search for similar sentences
         const results = await searchSentences(embedding);
@@ -557,6 +559,7 @@ async function askQuestion() {
         </div>`;
 
         // Show source talks with per-talk similarity badges and links
+        html += hydePassageCard(hypothetical);
         html += '<div class="result-sources"><strong>Sources:</strong></div>';
         for (const talk of topTalks) {
             const talkBadge = similarityBadge(talk.avgSimilarity);
@@ -583,17 +586,27 @@ async function askQuestion() {
 // SHARED SEARCH UTILITIES
 // ============================================
 
-// Get embedding via Edge Function
-async function getEmbedding(text) {
+// Get embedding via Edge Function. With useHyde, the function embeds an
+// AI-written hypothetical answer instead and returns it as `hypothetical`.
+async function getEmbedding(text, useHyde = false) {
     const { data, error } = await supabaseClient.functions.invoke('embed-question', {
-        body: { question: text }
+        body: { question: text, hyde: useHyde }
     });
 
     if (error) {
         throw new Error(data?.error || 'Failed to get embedding');
     }
 
-    return data.embedding;
+    return { embedding: data.embedding, hypothetical: data.hypothetical || null };
+}
+
+// Shows the passage HyDE actually searched with (empty string when HyDE is off).
+function hydePassageCard(hypothetical) {
+    if (!hypothetical) return '';
+    return `<div class="result-card hyde-passage">
+        <div class="result-title">HyDE searched with this AI-written passage (not a real quote)</div>
+        <div class="result-sentences">${escapeHtml(hypothetical)}</div>
+    </div>`;
 }
 
 // Search sentences using vector similarity

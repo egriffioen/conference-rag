@@ -532,6 +532,23 @@ input:focus {
     cursor: not-allowed;
 }
 
+/* HyDE toggle and the hypothetical passage it searched with */
+.hyde-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.result-card.hyde-passage {
+    border-style: dashed;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
 /* Search Results */
 .search-results {
     min-height: 0;
